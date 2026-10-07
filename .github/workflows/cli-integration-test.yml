@@ -74,7 +74,7 @@ jobs:
       - name: Create a quarkus project and generate the Argo CD yaml file
         env:
           # Increases thread stack size to 4 Megabytes as we got a stackoverflow exception
-          JAVA_TOOL_OPTIONS: "-Xss4m"
+          JAVA_TOOL_OPTIONS: "-Xss64m -Dpicocli.ansi=false"
         run: |
           echo "## Create a Quarkus project using the version: $QUARKUS_VERSION"
 
@@ -105,7 +105,8 @@ jobs:
           git log
           
           echo "## Generate the Argo CD project"
-          quarkus argocd project generate
+          quarkus argocd project generate > /tmp/gen.log 2>&1 || { grep -v printEnclosedStackTrace /tmp/gen.log | head -400; echo "### UNIQUE HEADERS"; grep -E "Caused by|Suppressed|Exception|Error" /tmp/gen.log | sort | uniq -c | sort -rn | head -60; exit 1; }
+          cat /tmp/gen.log
           
           echo "## Check if the file has been generated ..."
           if [ -f ".argocd/appproject-code-with-quarkus.yaml" ]; then
